@@ -50,7 +50,7 @@ func SolvePartTwo(filePath string) {
 				seenFrequencies[sum] = 1
 			} else {
 				found = true
-				fmt.Println(fmt.Sprintf("DUPLICATE AT%d",sum))
+				fmt.Println(fmt.Sprintf("DUPLICATE AT%d", sum))
 				return
 			}
 		}
