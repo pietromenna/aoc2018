@@ -83,6 +83,24 @@ func Test_Part1(t *testing.T) {
 	t.Fail()
 }
 
+func Test_Part2(t *testing.T) {
+	filePath := "/Users/pfm/go/src/github.com/pietromenna/aoc2018/day3/input.txt"
+	dat, _ := ioutil.ReadFile(filePath)
+
+	input := string(dat)
+	fmt.Println(fmt.Sprintf("Id: %d \n", ProcessClaimsReturnUntouchedId(input)))
+
+	t.Fail()
+}
+
+func Test_ExamplePart2(t *testing.T) {
+	input := "#1 @ 1,3: 4x4\n#2 @ 3,1: 4x4\n#3 @ 5,5: 2x2"
+
+	if untouchedId := ProcessClaimsReturnUntouchedId(input); untouchedId != 3 {
+		t.Errorf("expected: %v, actual %v", 3, untouchedId)
+	}
+}
+
 func ProcessClaim(c Claim) []Coord{
 	coords := make([]Coord,0)
 	for x := c.Left ; x < c.Left + c.Width; x++ {
@@ -118,4 +136,42 @@ func ProcessClaimsCountingDuplicates(in string) int {
 	}
 
 	return zeroes
+}
+
+func ProcessClaimsReturnUntouchedId(in string) int {
+	originalArea := make(map[int]int)
+	afterProcessArea := make(map[int]int)
+	fabric := make(map[Coord]int)
+	lines := strings.Split(in, "\n")
+
+	for _, line := range lines {
+		c := ReadClaim(line)
+		coords := ProcessClaim(c)
+		originalArea[c.Id] = len(coords)
+		for _, coord := range coords {
+			if _, ok := fabric[coord]; ok {
+				fabric[coord] = 0
+			} else {
+				fabric[coord] = c.Id
+			}
+		}
+	}
+
+	for _, v := range fabric {
+		if v != 0 {
+			if _, ok := afterProcessArea[v]; ok {
+				afterProcessArea[v] += 1
+			} else {
+				afterProcessArea[v] = 1
+			}
+		}
+	}
+
+	for k, v := range afterProcessArea {
+		if originalArea[k] == v {
+			return k
+		}
+	}
+
+	return 0
 }
