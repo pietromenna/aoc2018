@@ -97,6 +97,14 @@ func Test_PartOneExample(t *testing.T) {
 	}
 }
 
+func Test_PartTwoExample(t *testing.T) {
+	in := "[1518-11-01 00:00] Guard #10 begins shift\n[1518-11-01 00:05] falls asleep\n[1518-11-01 00:25] wakes up\n[1518-11-01 00:30] falls asleep\n[1518-11-01 00:55] wakes up\n[1518-11-01 23:58] Guard #99 begins shift\n[1518-11-02 00:40] falls asleep\n[1518-11-02 00:50] wakes up\n[1518-11-03 00:05] Guard #10 begins shift\n[1518-11-03 00:24] falls asleep\n[1518-11-03 00:29] wakes up\n[1518-11-04 00:02] Guard #99 begins shift\n[1518-11-04 00:36] falls asleep\n[1518-11-04 00:46] wakes up\n[1518-11-05 00:03] Guard #99 begins shift\n[1518-11-05 00:45] falls asleep\n[1518-11-05 00:55] wakes up"
+
+	if val := PartTwo(in); val != 4455 {
+		t.Errorf("Got %d, expected: %d", val, 4455)
+	}
+}
+
 func Test_PartOne(t *testing.T) {
 	filePath := "/Users/pfm/go/src/github.com/pietromenna/aoc2018/day4/input.txt"
 	dat, _ := ioutil.ReadFile(filePath)
@@ -104,6 +112,17 @@ func Test_PartOne(t *testing.T) {
 	input := string(dat)
 
 	if val := PartOne(input); val != 240 {
+		t.Errorf("Got %d, expected: %d", val, 240)
+	}
+}
+
+func Test_PartTwo(t *testing.T) {
+	filePath := "/Users/pfm/go/src/github.com/pietromenna/aoc2018/day4/input.txt"
+	dat, _ := ioutil.ReadFile(filePath)
+
+	input := string(dat)
+
+	if val := PartTwo(input); val != 240 {
 		t.Errorf("Got %d, expected: %d", val, 240)
 	}
 }
@@ -119,10 +138,45 @@ func PartOne(s string) int {
 
 	sort.Sort(ChronologicalSortedEntries(entries))
 
-	return ProcessEntries(entries)
+	totalTimeAsleep, minuteAsleepPerGuard := ProcessEntries(entries)
+
+	rankedByAsleepTime := rankByValue(totalTimeAsleep)
+	sleepyGuard := rankedByAsleepTime[0].Key
+	minutesRankedByAsleepForTheGuard := rankByValue(minuteAsleepPerGuard[sleepyGuard])
+	mostAsleepMinuteForGuard := minutesRankedByAsleepForTheGuard[0].Key
+
+	return sleepyGuard * mostAsleepMinuteForGuard
 }
 
-func ProcessEntries(entries []Entry) int {
+func PartTwo(s string) int {
+	var entries []Entry
+
+	lines := strings.Split(s, "\n")
+	for _, l := range lines {
+		e := CreateEntryFromLine(l)
+		entries = append(entries, e)
+	}
+
+	sort.Sort(ChronologicalSortedEntries(entries))
+
+	_, minuteAsleepPerGuard := ProcessEntries(entries)
+	sleepyGuard := 0
+	selectedMinute := -1
+	selectedMinuteTimes := -1
+	for guard, timetable := range minuteAsleepPerGuard {
+		for minute, times := range timetable {
+			if times > selectedMinuteTimes {
+				sleepyGuard = guard
+				selectedMinute = minute
+				selectedMinuteTimes = times
+			}
+		}
+	}
+
+	return sleepyGuard * selectedMinute
+}
+
+func ProcessEntries(entries []Entry) (map[int]int, map[int]map[int]int) {
 	totalTimeAsleep := make(map[int]int)
 	minuteAsleepPerGuard := make(map[int]map[int]int)
 	currentGuard := 0
@@ -148,12 +202,7 @@ func ProcessEntries(entries []Entry) int {
 		}
 	}
 
-	rankedByAsleepTime := rankByValue(totalTimeAsleep)
-	sleepyGuard := rankedByAsleepTime[0].Key
-	minutesRankedByAsleepForTheGuard := rankByValue(minuteAsleepPerGuard[sleepyGuard])
-	mostAsleepMinuteForGuard := minutesRankedByAsleepForTheGuard[0].Key
-
-	return sleepyGuard * mostAsleepMinuteForGuard
+	return totalTimeAsleep, minuteAsleepPerGuard
 
 }
 
