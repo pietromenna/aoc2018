@@ -2,6 +2,7 @@ package day5
 
 import (
 	"io/ioutil"
+	"math"
 	"testing"
 	"unicode"
 )
@@ -14,6 +15,17 @@ func Test_PartOne(t *testing.T) {
 	out := PartOne(input)
 	if len([]rune(out)) != 9172 {
 		t.Errorf("Got %v from %s", len([]rune(out)), out)
+	}
+}
+
+func Test_PartTwo(t *testing.T) {
+	filePath := "/Users/pfm/go/src/github.com/pietromenna/aoc2018/day5/input.txt"
+	dat, _ := ioutil.ReadFile(filePath)
+
+	input := string(dat)
+	out := PartTwo(input)
+	if out != 9172 {
+		t.Errorf("Got %v", out)
 	}
 }
 
@@ -79,3 +91,23 @@ func React(in string) (o string, changed bool) {
 	return out, changed
 }
 
+func PartTwo(in string) int {
+	i := math.MaxInt16
+	for c := 'a'; c <= 'z'; c++ {
+		t := RemoveAll(in, c)
+		i = int(math.Min(float64(i), float64(len([]rune(PartOne(t))))))
+	}
+
+	return i
+}
+
+func RemoveAll(in string, c rune) string {
+	out := ""
+	inLen := len([]rune(in))
+	for i := 0; i < inLen; i++ {
+		if rune(in[i]) != c && rune(in[i]) != unicode.ToUpper(c) {
+			out += string(in[i])
+		}
+	}
+	return out
+}
