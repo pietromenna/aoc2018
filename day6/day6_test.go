@@ -20,13 +20,32 @@ func Test_PartOneExample(t *testing.T) {
 	}
 }
 
+func Test_PartTwoExample(t *testing.T) {
+	in := "1, 1\n1, 6\n8, 3\n3, 4\n5, 5\n8, 9"
+
+	if out := PartTwo(in, 32); out != 16 {
+		t.Errorf("Something wrong, got %v", out)
+	}
+}
+
 func Test_PartOne(t *testing.T) {
 	filePath := "/Users/pfm/go/src/github.com/pietromenna/aoc2018/day6/input.txt"
 	dat, _ := ioutil.ReadFile(filePath)
 
 	in := string(dat)
 
-	if out := PartOne(in); out != 17 {
+	if out := PartOne(in); out != 3420 {
+		t.Errorf("Something wrong, got %v", out)
+	}
+}
+
+func Test_PartTwo(t *testing.T) {
+	filePath := "/Users/pfm/go/src/github.com/pietromenna/aoc2018/day6/input.txt"
+	dat, _ := ioutil.ReadFile(filePath)
+
+	in := string(dat)
+
+	if out := PartTwo(in,10000); out != 46667 {
 		t.Errorf("Something wrong, got %v", out)
 	}
 }
@@ -151,4 +170,25 @@ func AreaIsFinite(p Point, area map[Point]int, minX,minY,maxX,maxY int) bool{
 
 	return true
 
+}
+
+func PartTwo(in string, limit int) int {
+	points := ReadLines(in)
+	sumArea := 0
+
+	minX,minY,maxX,maxY := FindLimitsFrom(points)
+	for x := minX; x <= maxX; x++ {
+		for y := minY; y <= maxY; y ++ {
+			p := Point{x,y}
+			distance := 0
+			for _, pc := range points {
+				distance += int(math.Abs(float64(p.X - pc.X))+math.Abs(float64(p.Y - pc.Y)))
+			}
+			if distance < limit {
+				sumArea += 1
+			}
+		}
+	}
+
+	return sumArea
 }
