@@ -9,14 +9,14 @@ import (
 )
 
 type Node struct {
-	Name string
+	Name      string
 	DependsOn []string
-	Builds []string
+	Builds    []string
 }
 
 type Worker struct {
-	Duration int
-	Node     string
+	Duration          int
+	Node              string
 	ExtraStepDuration int
 }
 
@@ -32,10 +32,10 @@ func (w *Worker) Tick() {
 
 func (w *Worker) AssignWork(nodeName string) {
 	w.Node = nodeName
-	w.Duration = int(nodeName[0] - 'A' + 1)  + w.ExtraStepDuration
+	w.Duration = int(nodeName[0]-'A'+1) + w.ExtraStepDuration
 }
 
-func Test_PartOneExample(t *testing.T){
+func Test_PartOneExample(t *testing.T) {
 	in := "Step C must be finished before step A can begin.\nStep C must be finished before step F can begin.\n	Step A must be finished before step B can begin.\nStep A must be finished before step D can begin.\nStep B must be finished before step E can begin.\nStep D must be finished before step E can begin.\nStep F must be finished before step E can begin."
 
 	if result := BuildOrder(in); result != "CABDFE" {
@@ -44,7 +44,7 @@ func Test_PartOneExample(t *testing.T){
 
 }
 
-func Test_PartOne(t *testing.T){
+func Test_PartOne(t *testing.T) {
 	filePath := "/Users/pfm/go/src/github.com/pietromenna/aoc2018/day7/input.txt"
 	dat, _ := ioutil.ReadFile(filePath)
 
@@ -55,23 +55,22 @@ func Test_PartOne(t *testing.T){
 	}
 }
 
-func Test_PartTwoExample(t *testing.T){
+func Test_PartTwoExample(t *testing.T) {
 	in := "Step C must be finished before step A can begin.\nStep C must be finished before step F can begin.\n	Step A must be finished before step B can begin.\nStep A must be finished before step D can begin.\nStep B must be finished before step E can begin.\nStep D must be finished before step E can begin.\nStep F must be finished before step E can begin."
 
-	if result := BuildOrderParallel(in,2,0); result != 15 {
+	if result := BuildOrderParallel(in, 2, 0); result != 15 {
 		t.Errorf("Incorrect result %v, expected: %v", result, 15)
 	}
 
 }
 
-
-func Test_PartTwo(t *testing.T){
+func Test_PartTwo(t *testing.T) {
 	filePath := "/Users/pfm/go/src/github.com/pietromenna/aoc2018/day7/input.txt"
 	dat, _ := ioutil.ReadFile(filePath)
 
 	in := string(dat)
 
-	if result := BuildOrderParallel(in,5,60); result != 15 {
+	if result := BuildOrderParallel(in, 5, 60); result != 15 {
 		t.Errorf("Incorrect result %v, expected: %v", result, 15)
 	}
 }
@@ -140,7 +139,7 @@ func createGraph(in string) map[string]*Node {
 	return graph
 }
 
-func BuildOrderParallel(in string,numberOfWorkers, stepDuration int) int {
+func BuildOrderParallel(in string, numberOfWorkers, stepDuration int) int {
 	duration := 0
 	processedNodes := make(map[string]bool)
 	built := make(map[string]bool)
@@ -149,15 +148,14 @@ func BuildOrderParallel(in string,numberOfWorkers, stepDuration int) int {
 
 	queue := createInitialqueue(graph)
 
-	workers := make([]*Worker,0)
+	workers := make([]*Worker, 0)
 	for i := 0; i < numberOfWorkers; i++ {
-		workers = append(workers,&Worker{ExtraStepDuration: stepDuration})
+		workers = append(workers, &Worker{ExtraStepDuration: stepDuration})
 	}
 
 	for len(graph) > len(built) {
 		fmt.Println(fmt.Sprintf("Second %v -----", duration))
 		for _, w := range workers {
-			fmt.Println(fmt.Sprintf("Worker Status: %v", w))
 			if w.IsFree() {
 				// Mark as Done
 				if w.Node != "" {
@@ -169,22 +167,17 @@ func BuildOrderParallel(in string,numberOfWorkers, stepDuration int) int {
 							queue = append(queue, i)
 						}
 					}
-					sort.Strings(queue)
 					w.Node = ""
 				}
 				//Assign new work
-				if len(queue) > 0 {
-					node := graph[queue[0]]
-					queue = queue[1:]
-					if IsNodeReadyToBuild(node, built) {
-						w.AssignWork(node.Name)
-						processedNodes[node.Name] = true
-
-					} else {
-						queue = append(queue, node.Name)
-					}
+				q, node := GetNextWorkableNode(graph, queue, built)
+				queue = q
+				if node != ""{
+					w.AssignWork(node)
+					processedNodes[node] = true
 				}
 			}
+			fmt.Println(fmt.Sprintf("Worker Status: %v", w))
 			w.Tick()
 		}
 		duration += 1
@@ -211,4 +204,20 @@ func IsNodeReadyToBuild(node *Node, built map[string]bool) bool {
 		}
 	}
 	return true
+}
+
+func GetNextWorkableNode(graph map[string]*Node, q []string, built map[string]bool) (queue []string, out string) {
+	out = ""
+	sort.Strings(q)
+	if len(q) < 1 {
+		return q, out
+	}
+	for i := 0; i < len(q); i++ {
+		n := q[i]
+		if IsNodeReadyToBuild(graph[n], built) {
+			queue = append(q[:i], q[i+1:]...)
+			return queue, n
+		}
+	}
+	return q, out
 }
