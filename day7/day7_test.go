@@ -1,6 +1,7 @@
 package day7
 
 import (
+	"fmt"
 	"io/ioutil"
 	"sort"
 	"strings"
@@ -11,6 +12,27 @@ type Node struct {
 	Name string
 	DependsOn []string
 	Builds []string
+}
+
+type Worker struct {
+	Duration int
+	Node     string
+	ExtraStepDuration int
+}
+
+func (w *Worker) IsFree() bool {
+	return w.Duration <= 0
+}
+
+func (w *Worker) Tick() {
+	if w.Duration > 0 {
+		w.Duration = w.Duration - 1
+	}
+}
+
+func (w *Worker) AssignWork(nodeName string) {
+	w.Node = nodeName
+	w.Duration = int(nodeName[0] - 'A' + 1)  + w.ExtraStepDuration
 }
 
 func Test_PartOneExample(t *testing.T){
@@ -31,7 +53,27 @@ func Test_PartOne(t *testing.T){
 	if result := BuildOrder(in); result != "BHRTWCYSELPUVZAOIJKGMFQDXN" {
 		t.Errorf("Incorrect result %v, expected: %v", result, "CABDFE")
 	}
+}
 
+func Test_PartTwoExample(t *testing.T){
+	in := "Step C must be finished before step A can begin.\nStep C must be finished before step F can begin.\n	Step A must be finished before step B can begin.\nStep A must be finished before step D can begin.\nStep B must be finished before step E can begin.\nStep D must be finished before step E can begin.\nStep F must be finished before step E can begin."
+
+	if result := BuildOrderParallel(in,2,0); result != 15 {
+		t.Errorf("Incorrect result %v, expected: %v", result, 15)
+	}
+
+}
+
+
+func Test_PartTwo(t *testing.T){
+	filePath := "/Users/pfm/go/src/github.com/pietromenna/aoc2018/day7/input.txt"
+	dat, _ := ioutil.ReadFile(filePath)
+
+	in := string(dat)
+
+	if result := BuildOrderParallel(in,5,60); result != 15 {
+		t.Errorf("Incorrect result %v, expected: %v", result, 15)
+	}
 }
 
 func ProcessLine(in string) (string, string) {
@@ -43,32 +85,12 @@ func BuildOrder(in string) string {
 	out := ""
 	inLine := make(map[string]bool)
 	built := make(map[string]bool)
-	graph := make(map[string]*Node)
-	queue := make([]string,0)
-	lines := strings.Split(in,"\n")
-	for _, l := range lines {
-		n, d := ProcessLine(l)
-		//Update Node
-		if node, ok := graph[n]; !ok {
-			graph[n] = &Node{n, []string{d},[]string{}}
-		} else {
-			node.DependsOn = append(graph[n].DependsOn, d)
-		}
-		//Update Dependency
-		if node, ok := graph[d]; !ok {
-			graph[d] = &Node{d, []string{},[]string{n}}
-		} else {
-			node.Builds = append(graph[d].Builds, n)
-		}
-	}
+	graph := createGraph(in)
 
-	for k, v := range graph {
-		if len(v.DependsOn) == 0 {
-			queue = append(queue, k)
-			built[k] = true
-		}
+	queue := createInitialqueue(graph)
+	for _, n := range queue {
+		built[n] = true
 	}
-	sort.Strings(queue)
 
 	for len(queue) > 0 {
 		node := graph[queue[0]]
@@ -76,7 +98,7 @@ func BuildOrder(in string) string {
 		allDependencies := true
 		for _, d := range node.DependsOn {
 			if _, ok := built[d]; !ok {
-				allDependencies =  false
+				allDependencies = false
 			}
 		}
 
@@ -84,7 +106,7 @@ func BuildOrder(in string) string {
 			out += node.Name
 			built[node.Name] = true
 			for _, i := range node.Builds {
-				if _, ok := inLine[i] ; !ok {
+				if _, ok := inLine[i]; !ok {
 					inLine[i] = true
 					queue = append(queue, i)
 				}
@@ -97,4 +119,96 @@ func BuildOrder(in string) string {
 	}
 
 	return out
+}
+
+func createGraph(in string) map[string]*Node {
+	graph := make(map[string]*Node)
+	lines := strings.Split(in, "\n")
+	for _, l := range lines {
+		n, d := ProcessLine(l)
+		if node, ok := graph[n]; !ok {
+			graph[n] = &Node{n, []string{d}, []string{}}
+		} else {
+			node.DependsOn = append(graph[n].DependsOn, d)
+		}
+		if node, ok := graph[d]; !ok {
+			graph[d] = &Node{d, []string{}, []string{n}}
+		} else {
+			node.Builds = append(graph[d].Builds, n)
+		}
+	}
+	return graph
+}
+
+func BuildOrderParallel(in string,numberOfWorkers, stepDuration int) int {
+	duration := 0
+	processedNodes := make(map[string]bool)
+	built := make(map[string]bool)
+
+	graph := createGraph(in)
+
+	queue := createInitialqueue(graph)
+
+	workers := make([]*Worker,0)
+	for i := 0; i < numberOfWorkers; i++ {
+		workers = append(workers,&Worker{ExtraStepDuration: stepDuration})
+	}
+
+	for len(graph) > len(built) {
+		fmt.Println(fmt.Sprintf("Second %v -----", duration))
+		for _, w := range workers {
+			fmt.Println(fmt.Sprintf("Worker Status: %v", w))
+			if w.IsFree() {
+				// Mark as Done
+				if w.Node != "" {
+					built[w.Node] = true
+					node := graph[w.Node]
+					for _, i := range node.Builds {
+						if _, ok := processedNodes[i]; !ok {
+							processedNodes[i] = true
+							queue = append(queue, i)
+						}
+					}
+					sort.Strings(queue)
+					w.Node = ""
+				}
+				//Assign new work
+				if len(queue) > 0 {
+					node := graph[queue[0]]
+					queue = queue[1:]
+					if IsNodeReadyToBuild(node, built) {
+						w.AssignWork(node.Name)
+						processedNodes[node.Name] = true
+
+					} else {
+						queue = append(queue, node.Name)
+					}
+				}
+			}
+			w.Tick()
+		}
+		duration += 1
+	}
+
+	return duration - 1
+}
+
+func createInitialqueue(graph map[string]*Node) []string {
+	queue := make([]string, 0)
+	for k, v := range graph {
+		if len(v.DependsOn) == 0 {
+			queue = append(queue, k)
+		}
+	}
+	sort.Strings(queue)
+	return queue
+}
+
+func IsNodeReadyToBuild(node *Node, built map[string]bool) bool {
+	for _, d := range node.DependsOn {
+		if _, ok := built[d]; !ok {
+			return false
+		}
+	}
+	return true
 }
