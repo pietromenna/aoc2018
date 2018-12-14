@@ -8,6 +8,8 @@ import (
 )
 
 type Node struct {
+	NumChild int
+	NumMeta int
 	Children []*Node
 	MetadataEntries []int
 }
@@ -39,6 +41,19 @@ func SumAllMedataFromTree(in string) int {
 	return SumAllMetadata(n)
 }
 
+func SumAllMetadata(n *Node) int {
+	localMetadataSum := 0
+	for _, v := range n.MetadataEntries {
+		localMetadataSum += v
+	}
+
+	childMetadata := 0
+	for _, c := range n.Children {
+		childMetadata += SumAllMetadata(c)
+	}
+	return localMetadataSum + childMetadata
+}
+
 func ReadThreeFromString(in string) *Node {
 	tokens := strings.Split(in," ")
 	values := make([]int, 0)
@@ -47,69 +62,26 @@ func ReadThreeFromString(in string) *Node {
 		values = append(values, i)
 	}
 
-	n, rest := CreateNodeFrom(values)
-	if rest == nil || len(rest) == 0 {
-		return n
-	}
+	n,_ := ReadTreeFrom(values)
+
 	return n
 }
 
-func CreateNodeFrom(in []int) (*Node, []int) {
-	metadata := make([]int,0)
-	childData := make([]int,0)
-	rest := make([]int,0)
-	if len(in) == 0 {
-		return nil, nil
+func ReadTreeFrom(in []int) (*Node, []int) {
+	n := &Node{}
+	n.NumChild = in[0]
+	n.NumMeta = in[1]
+	rest := in[2:]
+	n.Children = make([]*Node,0)
+	for i := 0; i < n.NumChild; i++ {
+		var child *Node
+		child, rest = ReadTreeFrom(rest)
+		n.Children = append(n.Children,child)
+	}
+	for i := 0; i < n.NumMeta; i++ {
+		n.MetadataEntries = append(n.MetadataEntries, rest[0])
+		rest = rest[1:]
 	}
 
-	numberOfChildren := in[0]
-	numberOfMetadata := in[1]
-
-	if numberOfChildren == 0 {
-		metadata = in[2:2+numberOfMetadata]
-		if len(in) > 2+numberOfMetadata+1 {
-			rest = in[2+numberOfMetadata:]
-		}
-	} else {
-		metadata = in[len(in)-numberOfMetadata:]
-	}
-
-	childData = in[2:len(in)-numberOfMetadata]
-
-	return &Node{
-		Children: CreateFromStream(childData, numberOfChildren),
-		MetadataEntries: metadata,
-	}, rest
+	return n, rest
 }
-
-func CreateFromStream(in []int, childs int) []*Node {
-	nodes := make([]*Node,0)
-	rest := in
-
-	for i:=0; i< childs; i++ {
-		var node *Node
-		node, rest =  CreateNodeFrom(rest)
-		nodes = append(nodes, node)
-	}
-
-	return nodes
-}
-
-func SumAllMetadata(n *Node) int {
-	localMetadataSum := 0
-	for _, v := range n.MetadataEntries {
-		localMetadataSum += v
-	}
-
-	if n.Children == nil || len(n.Children) == 0 {
-		return localMetadataSum
-	}
-
-	sumMetadataChildren := 0
-	for _, c := range n.Children {
-		sumMetadataChildren += SumAllMetadata(c)
-	}
-
-	return localMetadataSum + sumMetadataChildren
-}
-
