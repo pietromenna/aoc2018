@@ -23,6 +23,15 @@ func Test_PartOneExample(t *testing.T) {
 	}
 }
 
+func Test_PartTwoExample(t *testing.T) {
+	in := "2 3 0 3 10 11 12 1 1 0 1 99 2 1 1 2"
+
+	sum := RootValueFromTree(in)
+	if sum != 66 {
+		t.Errorf("Got %v, expected %v", sum, 138)
+	}
+}
+
 func Test_PartOne(t *testing.T) {
 	filePath := "/Users/pfm/go/src/github.com/pietromenna/aoc2018/day8/input.txt"
 	dat, _ := ioutil.ReadFile(filePath)
@@ -30,7 +39,19 @@ func Test_PartOne(t *testing.T) {
 	in := string(dat)
 
 	sum := SumAllMedataFromTree(in)
-	if sum != 138 {
+	if sum != 35911 {
+		t.Errorf("Got %v, expected %v", sum, 138)
+	}
+}
+
+func Test_PartTwo(t *testing.T) {
+	filePath := "/Users/pfm/go/src/github.com/pietromenna/aoc2018/day8/input.txt"
+	dat, _ := ioutil.ReadFile(filePath)
+
+	in := string(dat)
+
+	sum := RootValueFromTree(in)
+	if sum != 17206 {
 		t.Errorf("Got %v, expected %v", sum, 138)
 	}
 }
@@ -39,6 +60,12 @@ func SumAllMedataFromTree(in string) int {
 	n := ReadThreeFromString(in)
 
 	return SumAllMetadata(n)
+}
+
+func RootValueFromTree(in string) int {
+	n := ReadThreeFromString(in)
+
+	return Value(n)
 }
 
 func SumAllMetadata(n *Node) int {
@@ -84,4 +111,22 @@ func ReadTreeFrom(in []int) (*Node, []int) {
 	}
 
 	return n, rest
+}
+
+func Value(n *Node) int{
+	if len(n.Children) == 0 {
+		sum := 0
+		for _, v := range n.MetadataEntries {
+			sum += v
+		}
+		return sum
+	}
+
+	sum := 0
+	for _, v := range n.MetadataEntries {
+		if v - 1< len(n.Children) && v-1 >= 0{
+			sum += Value(n.Children[v - 1])
+		}
+	}
+	return sum
 }
