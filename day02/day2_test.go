@@ -1,4 +1,4 @@
-package day2
+package day02
 
 import (
 	"fmt"
@@ -72,7 +72,7 @@ type CtUnique struct {
 }
 
 func Test_Part1(t *testing.T) {
-	filePath := "/Users/pfm/go/src/github.com/pietromenna/aoc2018/day2/input.txt"
+	filePath := "/Users/pfm/go/src/github.com/pietromenna/aoc2018/day02/input.txt"
 	dat, _ := ioutil.ReadFile(filePath)
 
 	inputInString := string(dat)
@@ -163,7 +163,7 @@ func Test_Part2Example(t *testing.T) {
 }
 
 func Test_Part2(t *testing.T) {
-	filePath := "/Users/pfm/go/src/github.com/pietromenna/aoc2018/day2/input.txt"
+	filePath := "/Users/pfm/go/src/github.com/pietromenna/aoc2018/day02/input.txt"
 	dat, _ := ioutil.ReadFile(filePath)
 
 	inputInString := string(dat)
